@@ -11,23 +11,26 @@ Backed by tooling you already know (and love) & structured to fill the gaps you 
 &nbsp;
 
 
-## Mandatory components
+## Mandatory Components
 
-Zarf's work necessitates that some components are "always on" (a.k.a. required & cannot be disabled). Those include:
+Zarf's work necessitates that some components are "always on" (a.k.a. required & cannot be disabled). These components are part of the default [init package](../zarf.yaml) and are always deployed whenever you perform a `zarf init` command. Those include:
 
 |                         | Description                                                                                                          |
 | ----------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| container-seed-registry | Adds a container registry so Zarf can bootstrap itself into the cluster.                                             |
+| zarf-injector           | Adds a Rust and Go binary to the working directory to use during the registry bootstrapping.
+| container-registry-seed | Adds a container registry so Zarf can bootstrap itself into the cluster.                                             |
 | container-registry      | Adds a container registry service&mdash;[docker registry](https://docs.docker.com/registry/)&mdash;into the cluster. |
+
+When you are creating your own packages/components, you can choose to make a component mandatory by adding the `required: true`. If you do not add this key, the component will be considered optional.
 
 &nbsp;
 
 
-## Additional components
+## Additional Components
 
 In addition to those that are always installed, Zarf's optional components provide additional functionality and can be enabled as & when you need them.
 
-These optional components are listed below along with the "magic strings" you pass to `zarf init --components` to pull them in:
+These optional components for the init package are listed below along with the "magic strings" you pass to `zarf init --components` to pull them in:
 
 | --components | Description                                                                                                                                                       |
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -35,10 +38,14 @@ These optional components are listed below along with the "magic strings" you pa
 | logging      | Adds a log monitoring stack&mdash;[promtail / loki / graphana (a.k.a. PLG)](https://github.com/grafana/loki)&mdash;into the cluster.                              |
 | git-server   | Adds a [GitOps](https://www.cloudbees.com/gitops/what-is-gitops)-compatible source control service&mdash;[Gitea](https://gitea.io/en-us/)&mdash;into the cluster. |
 
+There are two ways to deploy optional components, you can either pass a comma separated list of components to the `--components` flag such as `zarf init --components k3s,git-server --confirm` or you can exclude the flags and say yes/no as each optional component gets prompted to you.
 &nbsp;
 
 ## Composing Package Components
-Existing components and packages within a zarf.yaml can be composed in new packages. This can be achieved by using the import field and providing a path the zarf.yaml you wish to compose. Checkout the  [composable-packages](../examples/composable-packages/zarf.yaml) example.
+- TODO @JPERRY find an elegant way to mention that the 'required' key is not imported from the child. And that you can OVERRIDE the 'description' and 'secretName'
+
+Existing components and packages within a zarf.yaml can be composed in new packages. This can be achieved by using the import field and providing a path to the zarf.yaml you wish to compose.
+
 ```yaml
 components:
   - name: flux
@@ -46,8 +53,123 @@ components:
      path: 'path/to/flux/package/directory/'
 ```
 
+Unless you specify the component name in the import field, Zarf will try to import a component from the specified path that has the same name as the new component that is currently being defined. In the example above, since the new component is named 'flux' Zarf will import the 'flux' component from the specified path. If the new component is going to have a different name, you can specify the name of the package that needs to be imported in the import field.
+
+
+```yaml
+components:
+  - name: flux
+    import:
+     path: 'path/to/flux/package/directory/'
+     name: flux-v1.0.0
+```
+
+ Checkout the  [composable-packages](../examples/composable-packages/zarf.yaml) example to see this in action.
+
 &nbsp;
 
-## Further reading
+## What Makes Up A Component
+Zarf components can contain any of the following key/value pairs. Technically, none of the keys are required and you can use as many or few that makes sense to get to desired functionality:
+```yaml
+components:
+  - name: <STRING> # A unique identifier for this component.
+                   # The name can only contain alphabetical, numerical, or '-' characters.
+
+    description: <STRING> # Message given to a user when deciding to enable this component or not
+
+    required: <BOOLEAN> # If required, this component will always be deployed with the package
+
+    secretName: <STRING> # The secret Zarf will use for the registry; default is 'zarf-registry'>
+                         # The secret lives in the 'zarf' namespace.
+
+    cosignKeyPath: <STRING> # Path to publickey to use for online resources signed by cosign.
+                            # Signed files should be denoted with sget:// i.e. `sget://defenseunicorns/zarf-injector:0.4.3`
+
+    import: <OBJ> # References a component in another Zarf package to import
+
+    files: <OBJ LIST>  # Files to move onto the system that will be doing the `zarf package deploy` command
+
+    charts: <OBJ LIST> # Helm charts to install during a package deploy
+
+    manifests: <OBJ LIST> # Raw manifests that get converted into zarf-generated helm charts during deploy
+
+    images: <OBJ LIST> # Container images to be deployed to the Zarf provided docker registry
+
+    repos: <OBJ LIST> # git repos that will be pushed into the gitea server
+                      # The git-server component needs to be deployed during `zarf init`)>
+
+    dataInjectors: <OBJ LIST> # data packages to push into a running k8s cluster
+
+    scripts: <OBJ LIST> # custom commands that run before or after component deployment
+```
+
+&nbsp;
+
+
+The more complicated parts of a component are broken down below:
+
+<details>
+<summary> import </summary>
+
+</details>
+
+<details>
+<summary> files </summary>
+
+```yaml
+files:
+  - source:
+    shasum:
+    target:
+    executable:
+    symlinks:
+```
+
+type ZarfFile struct {
+	Source     string   `yaml:"source"`
+	Shasum     string   `yaml:"shasum,omitempty"`
+	Target     string   `yaml:"target"`
+	Executable bool     `yaml:"executable,omitempty"`
+	Symlinks   []string `yaml:"symlinks,omitempty"`
+}
+
+</details>
+
+
+<details>
+<summary> charts </summary>
+
+</details>
+
+
+<details>
+<summary> manifest </summary>
+
+</details>
+
+<details>
+<summary> images </summary>
+
+</details>
+
+<details>
+<summary> repos </summary>
+
+</details>
+
+<details>
+<summary> data-injectors </summary>
+
+</details>
+
+<details>
+<summary>scripts</summary>
+
+</details>
+
+
+&nbsp;
+
+## Further Reading
 
 For more detail&mdash;like which components are on/off by default&mdash;there's no better place to check than the source: [zarf.yaml](../zarf.yaml).
