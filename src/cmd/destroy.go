@@ -24,6 +24,12 @@ var destroyCmd = &cobra.Command{
 	Use:     "destroy",
 	Aliases: []string{"d"},
 	Short:   "Tear it all down, we'll miss you Zarf...",
+	Long: "Tear down Zarf.\n\n" +
+		"Deletes everything in the 'zarf' namespace within your connected k8s cluster.\n\n" +
+		"If Zarf deployed your k8s cluster, this command will also tear your cluster down.\n" +
+		"This command will search through /opt/zarf for any scripts that start with 'zarf-clean-' and attempt to execute them. " +
+		"Since this is a cleanup operation, Zarf will not stop the teardown if one of the scripts produce an error and any " +
+		"errors will be logged when running Zarf with the debug log-level.",
 	Run: func(cmd *cobra.Command, args []string) {
 		// NOTE: If 'zarf init' failed to deploy the k3s component (or if we're looking at the wrong kubeconfig)
 		//       there will be no zarf-state to load and the struct will be empty. In these cases, if we can find
@@ -42,15 +48,17 @@ var destroyCmd = &cobra.Command{
 			// Run all the scripts!
 			pattern := regexp.MustCompile(`(?mi)zarf-clean-.+\.sh$`)
 			scripts := utils.RecursiveFileList(config.ZarfCleanupScriptsPath, pattern)
-			// Iterate over al matching zarf-clean scripts and exec them
+			// Iterate over all matching zarf-clean scripts and exec them
 			for _, script := range scripts {
 				// Run the matched script
 				_, _, err := utils.ExecCommandWithContext(context.TODO(), true, script)
-				if errors.Is(err, os.ErrPermission) {
+				if err != nil && errors.Is(err, os.ErrPermission) {
 					message.Warnf("Got a 'permission denied' when trying to execute the script (%v). Are you the right user and/or do you have the right kube-context?\n", script)
 
 					// Don't remove scripts we can't execute so the user can try to manually run
 					continue
+				} else if err != nil {
+					message.Debugf("Received error when trying to execute the script (%v): %v", script, err)
 				}
 
 				// Try to remove the script, but ignore any errors

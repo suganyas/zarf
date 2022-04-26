@@ -17,6 +17,13 @@ var (
 		Use:     "connect <REGISTRY|LOGGING|GIT>",
 		Aliases: []string{"c"},
 		Short:   "Access services or pods deployed in the cluster.",
+		Long: "Uses a k8s port-forward to connect to resources within the cluster referenced by your kube-context.\n\n" +
+			"Three default options for this command are <REGISTRY|LOGGING|GIT>. These will connect to the Zarf created resouces " +
+			"(assuming they were selected when performing the `zarf init` command.\n\n" +
+			"Packages can provide service manifests that define their own shortcut connection options. These options will be " +
+			"printed to the terminal when the package finishes deploying\n\n" +
+			"Even if the packages don't define their own shortcut connection options, you can use the command flags " +
+			"to connect in through specific resources.",
 		Run: func(cmd *cobra.Command, args []string) {
 			var target string
 			if len(args) > 0 {
