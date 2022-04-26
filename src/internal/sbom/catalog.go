@@ -24,12 +24,12 @@ var viewerAssets embed.FS
 
 const JS_TEMPLATE = `
 ZARF_SBOM_IMAGE_LIST = [];
-ZARF_SBOM_DATA = 
+ZARF_SBOM_DATA =
 `
 
 var tranformRegex = regexp.MustCompile(`(?m)[^a-zA-Z0-9\.\-]`)
 
-func CatalogImages(tagToImage map[name.Tag]v1.Image, sbomDir, tarPath string) {
+func CatalogImages(tagToImage map[name.Tag]v1.Image, sbomDir, sbomViewerDir, tarPath string) {
 	imageCount := len(tagToImage)
 	spinner := message.NewProgressSpinner("Creating SBOMs for %d images.", imageCount)
 	defer spinner.Stop()
@@ -47,10 +47,10 @@ func CatalogImages(tagToImage map[name.Tag]v1.Image, sbomDir, tarPath string) {
 		spinner.Fatalf(err, "Unable to generate the SBOM image list")
 	}
 
-	copyViewerFile(sbomDir, "library.js")
-	copyViewerFile(sbomDir, "viewer.js")
-	copyViewerFile(sbomDir, "theme.css")
-	copyViewerFile(sbomDir, "styles.css")
+	copyViewerFile(sbomViewerDir, "library.js")
+	copyViewerFile(sbomViewerDir, "viewer.js")
+	copyViewerFile(sbomViewerDir, "theme.css")
+	copyViewerFile(sbomViewerDir, "styles.css")
 
 	for tag := range tagToImage {
 		spinner.Updatef("Creating image SBOMs (%d of %d): %s", currImage, imageCount, tag)
@@ -70,7 +70,7 @@ func CatalogImages(tagToImage map[name.Tag]v1.Image, sbomDir, tarPath string) {
 		if err != nil {
 			spinner.Fatalf(err, "Unable to create SBOM file for image %s", tag.String())
 		}
-		sbomViewerFile, err := os.Create(filepath.Join(sbomDir, fmt.Sprintf("%s.html", normalized)))
+		sbomViewerFile, err := os.Create(filepath.Join(sbomViewerDir, fmt.Sprintf("%s.html", normalized)))
 		if err != nil {
 			spinner.Fatalf(err, "Unable to create SBOM viewer file for image %s", tag.String())
 		}
@@ -103,7 +103,7 @@ func CatalogImages(tagToImage map[name.Tag]v1.Image, sbomDir, tarPath string) {
 
 		sbomViewerJS := fmt.Sprintf(`
 			ZARF_SBOM_IMAGE_LIST = %s;
-			ZARF_SBOM_DATA = %s;		
+			ZARF_SBOM_DATA = %s;
 		`, jsonImageList, sbombViewerData)
 
 		utils.ReplaceText(sbomViewerFile.Name(), "//ZARF_JS_DATA", sbomViewerJS)

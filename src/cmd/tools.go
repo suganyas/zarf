@@ -3,7 +3,10 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
+	"os/exec"
+	"path/filepath"
 
 	"github.com/defenseunicorns/zarf/src/types"
 
@@ -121,6 +124,37 @@ var createReadOnlyGiteaUser = &cobra.Command{
 		if err != nil {
 			message.Error(err, "Unable to create a read-only user in the Gitea service.")
 		}
+	},
+}
+
+var viewSbom = &cobra.Command{
+	Use:   "view-sbom [PACKAGE]",
+	Short: "View the sbom for the provided package images",
+	Run: func(cmd *cobra.Command, args []string) {
+		_, err := os.Stat("/path/to/whatever")
+		if len(args) != 1 || err != nil {
+			message.Fatalf(err, "Unable to open the sbom package")
+			// TODO create toggle prompt like we would for 'zarf package deploy' command
+		}
+
+		os.Mkdir("sbomviewer", 0700)
+		archiverDecompressCmd.Run(nil, []string{args[0], "sbomviewer"})
+		// TODO defer cleanup of this decompressed file or something
+		// Can't do it before the user has had a chance to view it though..
+
+		//Get the first html file..
+		sbomPath := "./sbomviewer/sbom/viewer/"
+		var htmlPaths []string
+		filepath.WalkDir(sbomPath, func(filePath string, fileName fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if filepath.Ext(fileName.Name()) == "html" {
+				htmlPaths = append(htmlPaths, filePath)
+			}
+			return nil
+		})
+		_ = exec.Command("open", htmlPaths[0]).Start()
 	},
 }
 

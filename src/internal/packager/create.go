@@ -45,17 +45,7 @@ func Create() {
 	// Perform early package validation
 	validate.Run()
 
-	if !confirmAction(configFile, "Create") {
-		os.Exit(0)
-	}
-
-	if seedImage != "" {
-		// Load seed images into their own happy little tarball for ease of import on init
-		pulledImages := images.PullAll([]string{seedImage}, tempPath.seedImage)
-		_ = utils.CreateDirectory(tempPath.sboms, 0700)
-		sbom.CatalogImages(pulledImages, tempPath.sboms, tempPath.seedImage)
-	}
-
+	// Get a list of all the images in this package
 	var combinedImageList []string
 	for _, component := range components {
 		addComponent(tempPath, component)
@@ -63,12 +53,30 @@ func Create() {
 		combinedImageList = append(combinedImageList, component.Images...)
 	}
 
+	// Prompt the user how to get sbom information if there are images in this package
+	var extraInfo string
+	if seedImage != "" || len(combinedImageList) > 0 {
+		extraInfo = fmt.Sprintf("After package creation is confirmed and completed, a SBOM report of this package can be viewed by "+
+			"running the command `zarf package inspect sbom %v`", packageName)
+	}
+
+	if !confirmAction(configFile, "Create", extraInfo) {
+		os.Exit(0)
+	}
+
+	if seedImage != "" {
+		// Load seed images into their own happy little tarball for ease of import on init
+		pulledImages := images.PullAll([]string{seedImage}, tempPath.seedImage)
+		_ = utils.CreateDirectory(tempPath.sbomViewer, 0700)
+		sbom.CatalogImages(pulledImages, tempPath.sboms, tempPath.sbomViewer, tempPath.seedImage)
+	}
+
 	// Images are handled separately from other component assets
 	if len(combinedImageList) > 0 {
 		uniqueList := removeDuplicates(combinedImageList)
 		pulledImages := images.PullAll(uniqueList, tempPath.images)
-		_ = utils.CreateDirectory(tempPath.sboms, 0700)
-		sbom.CatalogImages(pulledImages, tempPath.sboms, tempPath.images)
+		_ = utils.CreateDirectory(tempPath.sbomViewer, 0700)
+		sbom.CatalogImages(pulledImages, tempPath.sboms, tempPath.sbomViewer, tempPath.images)
 	}
 
 	_ = os.RemoveAll(packageName)

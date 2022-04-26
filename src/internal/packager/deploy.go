@@ -64,7 +64,10 @@ func Deploy() {
 
 	// Confirm the overall package deployment
 	configPath := tempPath.base + "/zarf.yaml"
-	confirm := confirmAction(configPath, "Deploy")
+	infoMessage := fmt.Sprintf("SBOM information for this package can be found by copying this link "+
+		"(file://%v) into your browser of choice and clicking on any of the .html files.\n", tempPath.sbomViewer)
+
+	confirm := confirmAction(configPath, "Deploy", infoMessage)
 
 	// Don't continue unless the user says so
 	if !confirm {

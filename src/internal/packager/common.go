@@ -40,6 +40,7 @@ type tempPaths struct {
 	images           string
 	components       string
 	sboms            string
+	sbomViewer       string
 }
 
 func createPaths() tempPaths {
@@ -53,6 +54,7 @@ func createPaths() tempPaths {
 		images:           basePath + "/images.tar",
 		components:       basePath + "/components",
 		sboms:            basePath + "/sboms",
+		sbomViewer:       basePath + "/sboms/viewer",
 	}
 }
 
@@ -75,7 +77,7 @@ func createComponentPaths(basePath string, component types.ZarfComponent) compon
 	}
 }
 
-func confirmAction(configPath string, userMessage string) bool {
+func confirmAction(configPath string, actionToConfirm string, infoMesage string) bool {
 	content, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		message.Fatal(err, "Unable to open the package config file")
@@ -87,18 +89,30 @@ func confirmAction(configPath string, userMessage string) bool {
 	utils.ColorPrintYAML(text)
 
 	// Display prompt if not auto-confirmed
-	var confirmFlag bool
+	var confirmedOption string
 	if config.DeployOptions.Confirm {
-		message.Infof("%s Zarf package confirmed", userMessage)
+		message.Infof("%s Zarf package confirmed", actionToConfirm)
 		return config.DeployOptions.Confirm
 	} else {
-		prompt := &survey.Confirm{
-			Message: userMessage + " this Zarf package?",
+		messagePrompt := actionToConfirm + " this Zarf package?"
+		if infoMesage != "" {
+			messagePrompt = messagePrompt + "\n" + infoMesage
 		}
-		_ = survey.AskOne(prompt, &confirmFlag)
+		prompt := &survey.Select{
+			Message: messagePrompt,
+			Options: []string{"y", "N", "sbom"},
+		}
+		_ = survey.AskOne(prompt, &confirmedOption)
+		for strings.ToLower(confirmedOption) != "y" && strings.ToLower(confirmedOption) != "n" {
+			if confirmedOption == "sbom" {
+				// Open the sbom viewer in a browser for the user
+				// TODO
+			}
+			_ = survey.AskOne(prompt, &confirmedOption)
+		}
 	}
 
-	return confirmFlag
+	return false
 }
 
 func getValidComponents(allComponents []types.ZarfComponent, requestedComponentNames []string) []types.ZarfComponent {
