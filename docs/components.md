@@ -85,87 +85,61 @@ components:
     cosignKeyPath: <STRING> # Path to publickey to use for online resources signed by cosign.
                             # Signed files should be denoted with sget:// i.e. `sget://defenseunicorns/zarf-injector:0.4.3`
 
-    import: <OBJ> # References a component in another Zarf package to import
+    images: <STRING LIST> # List of container images the component will use
+                          # These images will be deployed to the Zarf provided docker registry
 
-    files: <OBJ LIST>  # Files to move onto the system that will be doing the `zarf package deploy` command
+    repos: <STRING LIST> # List of git repos the component will use.
+                         # These repos will be pushed into the gitea server.
+                         # This also means the git-server component needs to be deployed during `zarf init`.
+                         # Private repos need to have their credentialis listed in ~/.git-credentials as TODO @JPERRY
 
-    charts: <OBJ LIST> # Helm charts to install during a package deploy
 
-    manifests: <OBJ LIST> # Raw manifests that get converted into zarf-generated helm charts during deploy
+    files: <OBJ LIST>           # Files to move onto the system that will be doing the `zarf package deploy` command
+      - source: <STRING>        # URL or path to where the file lives on the machine performing the `zarf package create` command
+        shasum: <STRING>        # Optional value to verify remote sources
+        target: <STRING>        # PAth to where the file will be placed on the system performing the `zarf package deploy` command
+        executable: <BOOLEAN>   # Indicates whether or not executable permissions should be set on the file
+        symlinks: <STRING LIST> # List of symlinks to create on the system performing the `zarf package deploy` command
 
-    images: <OBJ LIST> # Container images to be deployed to the Zarf provided docker registry
+    charts: <OBJ LIST>             # Helm charts to install during a package deploy
+      - name: <STRING>             # Name of the component
+      - url: <STRING>              # URL to where the chart is hosted (git or otherwise)
+      - version: <STRING>          # Version of the chart to install
+      - namespace: <STRING>        # Namespace to install the chart into
+      - gitPath: <STRING>          # Path to the chart on the git repo
+      - valuesFiles: <STRING LIST> # List of values files to use for the helm chart
 
-    repos: <OBJ LIST> # git repos that will be pushed into the gitea server
-                      # The git-server component needs to be deployed during `zarf init`)>
+    manifests: <OBJ LIST>             # Raw manifests that get converted into zarf-generated helm charts during deploy
+      - name: <STRING>                # Name of the component
+        namespace: <STRING>           # Namespace to install the manifest into
+                                      # TODO @JPERRY does this default to 'default'?
+        files: <STRING LIST>          #
+        kustomizations: <STRING LIST> #
 
     dataInjectors: <OBJ LIST> # data packages to push into a running k8s cluster
+      - source: <STRING>      # TODO
+        target: <OBJ>         # TODO
+          namespace: <STRING> # TODO
+          selector: <STRING>  # TODO
+          path: <STRING>      # TODO
 
-    scripts: <OBJ LIST> # custom commands that run before or after component deployment
+    import: <OBJ> # References a component in another Zarf package to import
+                  # When 'import' is provided, the only other keys that matter are the 'name',
+                  # 'required', 'description', and 'secretName' keys.
+      path: <STRING> # Path to the zarf.yaml file of the component to import
+      name: <STRING> # Optional name of the component to import
+                     # If not provided, it defaults to the name of the component being defined
+
+    scripts: <OBJ>       # custom commands that run before or after component deployment
+  	  showOutput: <BOOLEAN> # Indicates if the output of the scripts should be sent through stdout/stderr
+      timeoutSeconds: <INT> # Amount of time (in seconds) to wait for the script to complete before throwing an error
+                              # The default time is 5 minutes
+      retry: <BOOLEAN>      # Indicates if the script should be retried if it fails
+      before: <STRING LIST> # List of scripts to run before the component is deployed
+      after: <STRING LIST>  # List of scripts to run after the component is deployed
 ```
 
 &nbsp;
-
-
-The more complicated parts of a component are broken down below:
-
-<details>
-<summary> import </summary>
-
-</details>
-
-<details>
-<summary> files </summary>
-
-```yaml
-files:
-  - source:
-    shasum:
-    target:
-    executable:
-    symlinks:
-```
-
-type ZarfFile struct {
-	Source     string   `yaml:"source"`
-	Shasum     string   `yaml:"shasum,omitempty"`
-	Target     string   `yaml:"target"`
-	Executable bool     `yaml:"executable,omitempty"`
-	Symlinks   []string `yaml:"symlinks,omitempty"`
-}
-
-</details>
-
-
-<details>
-<summary> charts </summary>
-
-</details>
-
-
-<details>
-<summary> manifest </summary>
-
-</details>
-
-<details>
-<summary> images </summary>
-
-</details>
-
-<details>
-<summary> repos </summary>
-
-</details>
-
-<details>
-<summary> data-injectors </summary>
-
-</details>
-
-<details>
-<summary>scripts</summary>
-
-</details>
 
 
 &nbsp;
