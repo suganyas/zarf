@@ -15,9 +15,14 @@ import (
 var initCmd = &cobra.Command{
 	Use:     "init",
 	Aliases: []string{"i"},
-	Short:   "",
-	//Short:   "Deploys the gitops service or appliance cluster on a clean linux box",
-	Long: "Flags are only required if running via automation, otherwise the init command will prompt you for your configuration choices",
+	Short:   "Prepares a k8s cluster for the deployment of Zarf packages",
+	Long: "Uses a local 'zarf-init' package to injects a docker registry, " +
+		"and other optional useful things, into a k8s cluster under the 'zarf' namespace\n" +
+		"If you do not have a k8s cluster already configured, this command will give you " +
+		" the ability to install a cluster locally.\n" +
+		"This stage will also give you the option to deploy utility components that might be helpful/necessary " +
+		"when deploying other packages onto your cluster in the future.\n\n" +
+		"Flags are only required if running via automation, otherwise the init command will prompt you for your configuration choices",
 	Run: func(cmd *cobra.Command, args []string) {
 		zarfLogo := message.GetLogo()
 		_, _ = fmt.Fprintln(os.Stderr, zarfLogo)

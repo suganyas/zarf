@@ -29,7 +29,7 @@ var toolsCmd = &cobra.Command{
 var archiverCmd = &cobra.Command{
 	Use:     "archiver",
 	Aliases: []string{"a"},
-	Short:   "Compress/Decompress tools",
+	Short:   "Compress/Decompress tools for Zarf packages",
 }
 
 var archiverCompressCmd = &cobra.Command{
