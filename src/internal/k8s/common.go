@@ -153,14 +153,17 @@ func init() {
 // "kubectl" gets it if no extra config flags like "--kubeconfig" are passed
 func getRestConfig() *rest.Config {
 	message.Debug("k8s.getRestConfig()")
+	config, err := rest.InClusterConfig()
 
+	fmt.Print("Tried to retrieve incluster config if not found read from KUBECONFIG")
 	// Build the config from the currently active kube context in the default way that the k8s client-go gets it, which
 	// is to look at the KUBECONFIG env var
-	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-		clientcmd.NewDefaultClientConfigLoadingRules(),
-		&clientcmd.ConfigOverrides{}).ClientConfig()
 	if err != nil {
-		config, err = rest.InClusterConfig()
+		fmt.Print("Tried to retrieve incluster config as not found read from KUBECONFIG")
+		config, err = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+			clientcmd.NewDefaultClientConfigLoadingRules(),
+			&clientcmd.ConfigOverrides{}).ClientConfig()
+
 		if err != nil {
 			message.Fatalf(err, "Unable to connect to the K8s cluster with KUBECONFIG or retrieve incluster config")
 		}
