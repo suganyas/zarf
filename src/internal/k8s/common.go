@@ -160,7 +160,10 @@ func getRestConfig() *rest.Config {
 		clientcmd.NewDefaultClientConfigLoadingRules(),
 		&clientcmd.ConfigOverrides{}).ClientConfig()
 	if err != nil {
-		message.Fatalf(err, "Unable to connect to the K8s cluster")
+		config, err = rest.InClusterConfig()
+		if err != nil {
+			message.Fatalf(err, "Unable to connect to the K8s cluster with KUBECONFIG or retrieve incluster config")
+		}
 	}
 
 	return config
