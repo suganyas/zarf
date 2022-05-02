@@ -1,4 +1,4 @@
-module github.com/suganyas/zarf
+module github.com/defenseunicorns/zarf
 
 go 1.18
 
@@ -383,4 +383,3 @@ require (
 	sigs.k8s.io/release-utils v0.6.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 )
-replace github.com/defenseunicorns/zarf => github.com/defenseunicorns/zarf v0.19.0
