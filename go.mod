@@ -383,3 +383,4 @@ require (
 	sigs.k8s.io/release-utils v0.6.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 )
+replace github.com/defenseunicorns/zarf => github.com/defenseunicorns/zarf v0.19.0
